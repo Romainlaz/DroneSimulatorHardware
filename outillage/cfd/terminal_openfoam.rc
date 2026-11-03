@@ -1,0 +1,5 @@
+# Fichier de démarrage du terminal ouvert par l'icône (remplace ~/.bashrc dans ce seul terminal).
+. "$(dirname "${BASH_SOURCE[0]}")/env_openfoam.sh"
+mkdir -p "$DRONE_CFD" && cd "$DRONE_CFD"
+PS1='\[\e[1;36m\][OpenFOAM v2512]\[\e[0m\] \w \$ '
+echo "OpenFOAM $WM_PROJECT_VERSION chargé, sans ROS ni venv_stage. Dossier de travail : $DRONE_CFD"

@@ -1,0 +1,7 @@
+# terminal_env.rc : fichier de démarrage de l'icône « Terminal PX4-Gazebo ».
+# Remplace ~/.bashrc pour ce terminal seulement, donc ni ROS ni venv_stage.
+source "$(dirname "${BASH_SOURCE[0]}")/env.sh"
+PS1='(px4-gz) \w\$ '
+cd "$DRONE_SIM_DIR" || true
+echo "Environnement PX4 + Gazebo chargé. Vol de contrôle : ./test_minimal.sh   Notes : NOTES.md"
+gz sim --version | head -1
