@@ -1,6 +1,6 @@
 # État du projet
 
-_Tenu à jour par le chef. Dernière mise à jour : 2026-11-03_
+_Tenu à jour par le chef. Dernière mise à jour : 2026-11-04_
 
 ## Objectif
 
@@ -8,7 +8,8 @@ Banc d'essai virtuel de drones multirotors : à partir du seul hardware (assembl
 références des composants), obtenir automatiquement un vol simulé en 3D avec un vrai firmware et une
 fiche de performances indiquant l'origine de chaque valeur. Priorité : comportement en vol. Classe visée : FPV 3 à 7 pouces.
 But : tester du nouveau hardware et prédire les performances de drones que personne n'a mesurés, donc
-le plus souvent hors du domaine validé.
+le plus souvent hors du domaine validé. Centre de l'expérience : piloter son drone à la main pour en juger
+le ressenti.
 
 ## Phase actuelle
 
@@ -26,17 +27,12 @@ le plus souvent hors du domaine validé.
 |---|---|---|---|
 | — | — | — | — |
 
-_Tous les agents arrêtés proprement à la demande de l'utilisateur, le 2026-11-03 vers 18:29._
-
 ## File prête (validée, en attente d'une place libre)
 
-_À reprendre sur PC peu chargé, une à la fois, pour des mesures de temps fiables :_
+_Une à la fois, sur PC peu chargé, pour des mesures de temps fiables :_
 
-- [1] Reprise : cause de l'erreur d'altitude (4 vols sur 9 réussis), puis vitesses et MAVSDK. Commandes dans
-  `outillage/simulation/NOTES.md`
-- [6] Reprise : balayage des pas, vent, échelon de roulis. Commandes dans
-  `~/drone-tools/betaflight-proto/ETAT_REPRISE.md`
-- [2] Reprise : niveau 6, banc motorBike, ParaView. Commandes dans `outillage/cfd/NOTES.md`
+- [6] Suite, validée : pilotage au clavier par défaut, bascule automatique sur une manette branchée, vues FPV et extérieure, latence
+  commande-image. **Attend un `/usage` à jour.** Sur le modèle d'exemple, avec le mélangeur corrigé
 
 ## Bloqué (en attente d'une entrée non figée)
 
@@ -44,17 +40,18 @@ _À reprendre sur PC peu chargé, une à la fois, pour des mesures de temps fiab
 |---|---|
 | Contrats d'interface, dont le format de la fiche hardware | Fiches [1] à [5], choix du firmware |
 | Chaîne minimale de bout en bout | Contrats d'interface |
+| [2] Reprise CFD, reportée : niveau 6, banc motorBike, ParaView | Chaîne minimale |
 
 ## File de décisions pour l'utilisateur
 
 _Ce que tu peux trancher ou relire pendant que les agents travaillent._
 
 - Double-cliquer sur les icônes (FreeCAD, Gmsh, CalculiX, Gazebo + PX4, QGroundControl, terminal PX4, OpenFOAM,
-  ParaView) une fois le PC au repos, et confirmer que les fenêtres s'ouvrent
-- Choix du firmware, après les reprises de [1] et [6] (recommandation de [4] : Betaflight, PX4 en repli,
-  firmware isolé derrière une interface)
-- Autoriser la reprise de [1], [6] et [2] avec un `/usage` à jour, et fusionner ou non la branche
-  `initialisation` dans `main`
+  ParaView, Betaflight) entre deux fiches, pas pendant les vols de mesure, et confirmer que les fenêtres s'ouvrent
+- Choix du firmware, après le premier vol à la main de [6] Suite (recommandation de [4] : Betaflight, PX4 en
+  repli, firmware isolé derrière une interface)
+- Supprimer ou non `~/drone-tools/betaflight-proto/run/` (859 Mo, contient l'EEPROM au mélangeur corrigé)
+- Commiter et pousser ou non le travail d'aujourd'hui
 
 ### Périmètre (validé par « go pour tout » le 2026-11-03)
 
@@ -64,9 +61,9 @@ _Ce que tu peux trancher ou relire pendant que les agents travaillent._
 
 ## Consommation de la session
 
-- Dernière mesure : 72 % de la session, 13 % de la semaine (`/usage`, 2026-11-03) ; mesure précédente : 55 % et 11 %
-- Seuil atteint : 50 à 80 %, seuil de 80 % proche : aucune nouvelle tâche avant la réinitialisation
-- Réinitialisation : session à 18:40 ; semaine le dimanche 8 novembre à 20:00
+- Dernière mesure : 60 % de la session, 22 % de la semaine (`/usage`, 2026-11-04, après la fin de [6])
+- Seuil atteint : 50 % (tâches à fort impact seulement, pas d'exploration coûteuse)
+- Réinitialisation : session à 17:19 ; semaine le dimanche 8 novembre à 19:59
 
 ## Journal
 
@@ -116,3 +113,19 @@ _Ce que tu peux trancher ou relire pendant que les agents travaillent._
   inexpliquée. [2] : sphère Re=100, Cd=1,0928 au niveau 5, banc turbulent non abouti, projection drone non
   mesurée. [6] : Betaflight 2026.6.2 vole et charge ses paramètres, 2 armements échoués sur 5, vent et échelon
   jamais lancés. Firmware non tranché. Travail commité et poussé sur `initialisation`.
+- 2026-11-04 12:29 : reprise autorisée par l'utilisateur, PC au repos. L'utilisateur a fusionné ce travail dans
+  `main` (demande n°2, sans relecture par un vérificateur). [1] relancée seule, [6] et [2] en file.
+- 2026-11-04 : le pilotage à la main devient le centre de l'expérience, tests généraux retenus
+  (`docs/decisions/2026-11-04-pilotage-et-tests.md`). Fiche [6] à représenter avec le pilotage temps réel.
+- 2026-11-04 12:37 : [1] partielle : 3 vols sur 3 réussis sur machine libre, erreur d'altitude disparue, charge CPU
+  fortement suspectée, non prouvée. Suite de [1] relancée pendant la pause de l'utilisateur, sans essai de charge.
+- 2026-11-04 12:55 : [1] critère atteint : 5 vols consécutifs réussis sur machine libre, facteur temps réel 0,98 à
+  vitesse 1 et 5,7 au maximum, MAVSDK a volé. Restent à tester par l'utilisateur : fenêtre 3D, icône, QGroundControl.
+  [6] relancée dans son périmètre validé, sans pilotage à la main.
+- 2026-11-04 : validés : manette et clavier, vues FPV et extérieure, suite de [6] avec pilotage, [2] reportée, pas
+  d'essai de charge pour l'instant.
+- 2026-11-04 15:16 : [6] reprise terminée, sans vol manuel ni fenêtre 3D. Betaflight : stationnaire tenu par une boucle
+  Python, 18 vols sur 18 toutes séries de stationnaire confondues, plus petit pas fiable 1,25 ms (0,5 ms en build 8 kHz,
+  stationnaire seulement) contre 4 ms pour PX4. Mélangeur d'origine inadapté, corrigé par CLI. Un interblocage de démarrage
+  prouvé et corrigé, mais la panne d'hier n'est pas reproduite. Maintien de position firmware en échec sous essai de
+  vent. Choix du firmware reporté au premier vol à la main.

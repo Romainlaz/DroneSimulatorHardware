@@ -299,6 +299,29 @@ def version_px4(code):
     return f"{code >> 24 & 0xFF}.{code >> 16 & 0xFF}.{code >> 8 & 0xFF} (type {code & 0xFF:#x})"
 
 
+def verite_journal(u, t, z, t0, t1):
+    """Palier comparé à vehicle_local_position_groundtruth, publié par gz_bridge et journalisé par PX4.
+
+    Bien plus dense que « gz model » (un point par seconde au mieux) : c'est la mesure à regarder pour
+    juger le vol. Purement informatif : n'entre dans aucun critère de réussite.
+    """
+    try:
+        g = u.get_dataset("vehicle_local_position_groundtruth").data
+    except (IndexError, KeyError, ValueError):
+        return None
+    zg = np.interp(t, g["timestamp"] / 1e6, -g["z"]) - float(-g["z"][0])
+    pal = (t >= t0) & (t <= t1)
+    err = z[pal] - float(z[0]) - zg[pal]
+    return {
+        "hauteur_moy_m": round(float(zg[pal].mean()), 3),
+        "hauteur_ecart_type_m": round(float(zg[pal].std()), 4),
+        "hauteur_min_m": round(float(zg[pal].min()), 3),
+        "hauteur_max_m": round(float(zg[pal].max()), 3),
+        "erreur_estimation_moy_m": round(float(err.mean()), 3),
+        "erreur_estimation_max_abs_m": round(float(np.abs(err).max()), 3),
+    }
+
+
 def analyser_ulog(chemin, alt_cible, t_stat_debut_s=None):
     """Lit le .ulg, indépendamment de la télémétrie, et renvoie mesures et critères."""
     u = ULog(str(chemin))
@@ -338,6 +361,7 @@ def analyser_ulog(chemin, alt_cible, t_stat_debut_s=None):
             pal = (t >= t0) & (t <= t1)
             if pal.sum() > 10:
                 x, y = pos["x"][pal], pos["y"][pal]
+                res["verite_journal"] = verite_journal(u, t, z, t0, t1)
                 res["stationnaire"] = {
                     "duree_s": round(float(t1 - t0), 2),
                     "altitude_moy_m": round(float(z_rel[pal].mean()), 3),
@@ -379,6 +403,7 @@ def main():
     ap.add_argument("--monde", default="default")
     ap.add_argument("--attente", type=float, default=0.0, help="attente au sol avant armement (s murales)")
     ap.add_argument("--nice", type=int, default=0, help="priorité de la simulation (une valeur > 0 dégrade le flux IMU sur machine chargée)")
+    ap.add_argument("--points", type=int, default=5, help="lectures « gz model » pendant le stationnaire (0 : aucune, vol de diagnostic, critère Gazebo alors en échec)")
     ap.add_argument("--delai", type=float, default=180.0, help="délai mural par étape (s)")
     ap.add_argument("--sortie", default=str(Path.home() / "drone-tools/logs"))
     args = ap.parse_args()
@@ -389,6 +414,7 @@ def main():
     dossier = Path(args.sortie) / time.strftime("test_%Y%m%d_%H%M%S")
     dossier.mkdir(parents=True)
     resultat = {"args": vars(args), "charge_machine_debut": os.getloadavg()[0],
+                "uptime_avant": os.getloadavg(),
                 "criteres": {}, "gazebo_verite": {}}
     sim = Simulation(args, dossier)
     stats = None
@@ -427,16 +453,18 @@ def main():
         t_h0 = time.monotonic()
         # Vérité terrain Gazebo comparée à l'altitude estimée par PX4, à plusieurs instants.
         paires = []
-        for _ in range(5):
-            vol.stationnaire(args.stationnaire / 5)
+        if args.points <= 0:
+            vol.stationnaire(args.stationnaire)
+        for _ in range(max(args.points, 0)):
+            vol.stationnaire(args.stationnaire / args.points)
             vol.pomper(0.2)
             paires.append((round(sim.altitude_gazebo()[2] - z_sol[2], 3), round(vol.alt_rel, 3)))
         t_h1 = time.monotonic()
-        verite = [p[0] for p in paires]
+        verite = [p[0] for p in paires] or [float("nan")]
         resultat["gazebo_verite"]["stationnaire_hauteur_verite_estimee_m"] = paires
         resultat["gazebo_verite"]["stationnaire_hauteur_moyenne_m"] = round(float(np.mean(verite)), 3)
-        resultat["gazebo_verite"]["ecart_estimation_moins_verite_m"] = round(float(np.mean([p[1] - p[0] for p in paires])), 3)
-        journal(f"Hauteur Gazebo en stationnaire (moyenne de 5) : {np.mean(verite):.2f} m")
+        resultat["gazebo_verite"]["ecart_estimation_moins_verite_m"] = round(float(np.mean([p[1] - p[0] for p in paires] or [float("nan")])), 3)
+        journal(f"Hauteur Gazebo en stationnaire (moyenne de {len(paires)}) : {np.mean(verite):.2f} m")
 
         journal("Atterrissage")
         vol.atterrir()
@@ -481,6 +509,7 @@ def main():
             stats.arreter()
         sim.arreter()
 
+    resultat["uptime_apres"] = os.getloadavg()
     ok = "erreur" not in resultat and resultat["criteres"] and all(resultat["criteres"].values())
     resultat["reussite"] = bool(ok)
     (dossier / "resultat.json").write_text(json.dumps(resultat, indent=2, ensure_ascii=False, default=str))
