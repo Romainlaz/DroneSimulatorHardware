@@ -29,10 +29,8 @@ le ressenti.
 
 ## File prête (validée, en attente d'une place libre)
 
-_Une à la fois, sur PC peu chargé, pour des mesures de temps fiables :_
-
-- [6] Suite, validée : pilotage au clavier par défaut, bascule automatique sur une manette branchée, vues FPV et extérieure, latence
-  commande-image. **Attend un `/usage` à jour.** Sur le modèle d'exemple, avec le mélangeur corrigé
+- [6] Suite, à reprendre après un `/usage` à jour : corriger `pilot.py` (`self.st = None` dans `Pilote.__init__`), premier
+  vol, puis icône, notice et latence. Commandes dans `~/drone-tools/betaflight-proto/ETAT_REPRISE.md`, section « Pilotage à la main »
 
 ## Bloqué (en attente d'une entrée non figée)
 
@@ -51,7 +49,7 @@ _Ce que tu peux trancher ou relire pendant que les agents travaillent._
 - Choix du firmware, après le premier vol à la main de [6] Suite (recommandation de [4] : Betaflight, PX4 en
   repli, firmware isolé derrière une interface)
 - Supprimer ou non `~/drone-tools/betaflight-proto/run/` (859 Mo, contient l'EEPROM au mélangeur corrigé)
-- Commiter et pousser ou non le travail d'aujourd'hui
+- Fusionner ou non `initialisation` dans `main` (e987ee4 : fusion à faire par l'utilisateur, pas encore relue par un vérificateur)
 
 ### Périmètre (validé par « go pour tout » le 2026-11-03)
 
@@ -129,3 +127,8 @@ _Ce que tu peux trancher ou relire pendant que les agents travaillent._
   stationnaire seulement) contre 4 ms pour PX4. Mélangeur d'origine inadapté, corrigé par CLI. Un interblocage de démarrage
   prouvé et corrigé, mais la panne d'hier n'est pas reproduite. Maintien de position firmware en échec sous essai de
   vent. Choix du firmware reporté au premier vol à la main.
+- 2026-11-04 : commit e987ee4 poussé sur `initialisation` à la demande de l'utilisateur. `/usage` : 60 %. [6] Suite lancée,
+  arrêt imposé à 17:00, avant la réinitialisation de 17:19.
+- 2026-11-04 15:32 : arrêt propre de [6] Suite à la demande de l'utilisateur, critère non atteint. Aucun vol : le seul lancement de
+  `pilot.py` a planté avant le vol. `test_entree.py` : 32 OK (logique seule, manette simulée). Icône Betaflight inchangée, sans
+  pilotage. Notice non écrite. Choix de fenêtre et de vues de l'agent non validés. Scripts hors dépôt.
